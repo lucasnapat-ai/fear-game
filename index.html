@@ -3,269 +3,177 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>Fear Trainer AR - Dogs</title>
+<title>Face Your Fear AR</title>
 <style>
-  :root{
-    --bg:#07090f;
-    --panel:rgba(10,14,24,.84);
-    --text:#f4f7ff;
-    --muted:#b7c0d4;
-    --good:#57e389;
-    --warn:#ffcf5a;
-    --bad:#ff6b6b;
-    --accent:#7aa7ff;
-  }
-  *{box-sizing:border-box}
-  html,body{
-    margin:0;
-    height:100%;
-    background:var(--bg);
-    color:var(--text);
-    font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-    overflow:hidden;
-    touch-action:none;
-  }
-  #app{
-    position:fixed;
-    inset:0;
-    overflow:hidden;
-    background:linear-gradient(160deg,#0b1020,#07090f);
-  }
-  video{
-    position:absolute;
-    inset:0;
-    width:100%;
-    height:100%;
-    object-fit:cover;
-    background:#111;
-  }
-  video.selfie{transform:scaleX(-1)}
-  #fallback{
-    position:absolute;
-    inset:0;
-    display:grid;
-    place-items:center;
-    padding:28px;
-    text-align:center;
-    color:#d7dff5;
-    background:
-      radial-gradient(circle at 20% 20%,rgba(122,167,255,.15),transparent 28%),
-      radial-gradient(circle at 80% 65%,rgba(87,227,137,.10),transparent 32%),
-      #07090f;
-    z-index:0;
-  }
-  #fallback b{font-size:22px}
-  #cameraHelp{
-    position:absolute;
-    top:82px;
-    left:10px;
-    right:10px;
-    z-index:7;
-    display:none;
-    background:rgba(255,207,90,.94);
-    color:#191200;
-    border-radius:18px;
-    padding:11px 12px;
-    font-weight:800;
-    font-size:13px;
-    box-shadow:0 10px 25px rgba(0,0,0,.25);
-  }
-  #dogLayer{
-    position:absolute;
-    inset:0;
-    pointer-events:none;
-    z-index:2;
-  }
-  #dog{
-    position:absolute;
-    left:50%;
-    top:56%;
-    width:120px;
-    height:120px;
-    transform:translate(-50%,-50%) scale(1);
-    filter:drop-shadow(0 12px 18px rgba(0,0,0,.55));
-    transition:all .8s ease;
-  }
-  .dog-body{position:absolute;left:18px;top:42px;width:82px;height:52px;background:#8b5a32;border-radius:38px 38px 26px 26px}
-  .dog-head{position:absolute;left:43px;top:13px;width:58px;height:56px;background:#9a693d;border-radius:48% 48% 44% 44%}
-  .ear{position:absolute;top:18px;width:22px;height:44px;background:#613b21;border-radius:60% 60% 70% 70%}
-  .ear.left{left:34px;transform:rotate(20deg)} .ear.right{left:88px;transform:rotate(-22deg)}
-  .eye{position:absolute;top:34px;width:7px;height:7px;background:#101010;border-radius:50%}
-  .eye.left{left:60px}.eye.right{left:82px}
-  .snout{position:absolute;left:63px;top:42px;width:26px;height:19px;background:#d6aa78;border-radius:50%}
-  .nose{position:absolute;left:72px;top:44px;width:9px;height:7px;background:#111;border-radius:50%}
-  .mouth{position:absolute;left:73px;top:53px;width:10px;height:6px;border-bottom:2px solid #111;border-radius:0 0 12px 12px}
-  .leg{position:absolute;top:82px;width:12px;height:31px;background:#6e4528;border-radius:8px}
-  .leg.a{left:30px}.leg.b{left:55px}.leg.c{left:78px}.leg.d{left:95px}
-  .tail{position:absolute;left:5px;top:48px;width:43px;height:15px;border-radius:20px;border-top:11px solid #7d4d2a;transform:rotate(-25deg);transform-origin:right center;animation:wag 1s infinite ease-in-out}
-  @keyframes wag{50%{transform:rotate(16deg)}}
-  .realistic .dog-body{background:linear-gradient(100deg,#6d4328,#a87548 45%,#56331e)}
-  .realistic .dog-head{background:linear-gradient(130deg,#6e4528,#ad794b)}
-  .realistic .ear{background:linear-gradient(#462817,#75451f)}
-  .realistic .snout{background:linear-gradient(#e2bd8b,#b77d4c)}
-  .realistic .dog-body,.realistic .dog-head{box-shadow:inset 0 -8px 15px rgba(0,0,0,.22)}
-  .shadowDog{opacity:.65;filter:blur(.3px) drop-shadow(0 16px 24px rgba(0,0,0,.8))}
-  .growlDog .eye{background:#ffdf5a;box-shadow:0 0 8px #ffdf5a}
-  .growlDog .mouth{border-bottom-color:#fff;height:10px}
-  .closeDog{animation:idleMove 1.7s infinite ease-in-out}
-  @keyframes idleMove{50%{margin-top:-8px}}
-
-  .topbar{
-    position:absolute;
-    top:env(safe-area-inset-top);
-    left:0;
-    right:0;
-    padding:10px;
-    display:flex;
-    gap:8px;
-    align-items:center;
-    z-index:4;
-  }
-  .chip{
-    background:var(--panel);
-    border:1px solid rgba(255,255,255,.11);
-    border-radius:16px;
-    padding:8px 10px;
-    backdrop-filter:blur(8px);
-    font-weight:700;
-    font-size:13px;
-    box-shadow:0 8px 24px rgba(0,0,0,.2);
-  }
-  .chip span{color:var(--accent)}
-  #panic{
-    margin-left:auto;
-    background:rgba(255,80,80,.92);
-    color:white;
-    border:0;
-    border-radius:16px;
-    padding:10px 13px;
-    font-weight:900;
-    box-shadow:0 8px 25px rgba(255,0,0,.25);
-  }
-  .panel{
-    position:absolute;
-    left:10px;
-    right:10px;
-    bottom:calc(10px + env(safe-area-inset-bottom));
-    z-index:5;
-    background:var(--panel);
-    border:1px solid rgba(255,255,255,.12);
-    border-radius:22px;
-    padding:12px;
-    backdrop-filter:blur(12px);
-    box-shadow:0 14px 45px rgba(0,0,0,.34);
-  }
-  .title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:7px}
-  .title h1{font-size:18px;line-height:1.05;margin:0}
-  .title small{color:var(--muted);font-weight:700}
-  .mission{color:#e8ecfb;font-size:14px;line-height:1.25;min-height:38px;margin-bottom:9px}
-  .bar{height:12px;border-radius:999px;overflow:hidden;background:rgba(255,255,255,.12);margin:7px 0 11px}
-  #progress{width:0%;height:100%;background:linear-gradient(90deg,var(--accent),var(--good));border-radius:inherit;transition:width .25s linear}
-  .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
-  button{
-    border:0;
-    border-radius:16px;
-    padding:12px 10px;
-    font-weight:900;
-    color:#07101e;
-    background:#eef3ff;
-    min-height:46px;
-    font-size:14px;
-  }
-  button:active{transform:translateY(1px) scale(.99)}
-  .primary{background:var(--good)}
-  .secondary{background:#dce7ff}
-  .warn{background:var(--warn)}
-  .dark{background:rgba(255,255,255,.12);color:var(--text);border:1px solid rgba(255,255,255,.12)}
-  #breath{
-    position:absolute;
-    left:50%;
-    top:45%;
-    width:92px;
-    height:92px;
-    transform:translate(-50%,-50%) scale(.7);
-    border-radius:50%;
-    border:3px solid rgba(255,255,255,.8);
-    background:rgba(122,167,255,.12);
-    display:none;
-    place-items:center;
-    color:white;
-    font-weight:900;
-    text-shadow:0 2px 6px rgba(0,0,0,.7);
-    z-index:3;
-    animation:breathe 6s infinite ease-in-out;
-  }
-  @keyframes breathe{0%,100%{transform:translate(-50%,-50%) scale(.72)}50%{transform:translate(-50%,-50%) scale(1.18)}}
-  .screen{
-    position:absolute;
-    inset:0;
-    z-index:10;
-    display:grid;
-    place-items:center;
-    padding:18px;
-    background:linear-gradient(160deg,#09111f,#07090f);
-  }
-  .card{
-    width:min(560px,100%);
-    background:rgba(255,255,255,.08);
-    border:1px solid rgba(255,255,255,.13);
-    border-radius:26px;
-    padding:18px;
-    box-shadow:0 18px 50px rgba(0,0,0,.35);
-  }
-  .card h2{margin:0 0 8px;font-size:26px}
-  .card p{color:#d8e0f5;line-height:1.4;margin:8px 0}
-  .card ul{padding-left:20px;color:#d8e0f5}
-  .card li{margin:6px 0}
-  .wide{width:100%;margin-top:10px}
-  .hidden{display:none!important}
-  @media (min-width:740px){
-    .panel{left:50%;right:auto;transform:translateX(-50%);width:640px}
-    #dog{width:145px;height:145px}
-  }
+:root{
+  --bg:#07090f;
+  --panel:rgba(9,13,24,.86);
+  --text:#f5f7ff;
+  --muted:#bbc5db;
+  --good:#56e08d;
+  --warn:#ffd15c;
+  --bad:#ff5d5d;
+  --accent:#7aa7ff;
+}
+*{box-sizing:border-box}
+html,body{
+  margin:0;height:100%;background:var(--bg);color:var(--text);
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+  overflow:hidden;touch-action:none;
+}
+#app{position:fixed;inset:0;overflow:hidden;background:linear-gradient(160deg,#09111f,#05070d)}
+video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#111;z-index:0}
+video.selfie{transform:scaleX(-1)}
+#fallback{
+  position:absolute;inset:0;display:grid;place-items:center;padding:26px;text-align:center;
+  background:radial-gradient(circle at 20% 20%,rgba(122,167,255,.16),transparent 28%),#07090f;z-index:0;
+}
+#cameraHelp{
+  position:absolute;top:76px;left:10px;right:10px;z-index:8;display:none;
+  background:rgba(255,209,92,.96);color:#1b1300;border-radius:16px;padding:10px 12px;
+  font-weight:900;font-size:13px;box-shadow:0 10px 25px rgba(0,0,0,.3);
+}
+#fearLayer{position:absolute;inset:0;z-index:2;pointer-events:none}
+.fearObj{
+  position:absolute;left:50%;top:54%;width:125px;height:125px;
+  transform:translate(-50%,-50%) scale(1);
+  transition:left 1.2s ease, top 1.2s ease, transform .8s ease, opacity .5s ease;
+  filter:drop-shadow(0 18px 22px rgba(0,0,0,.55));
+}
+#realDog{
+  width:155px;height:210px;border-radius:24px;object-fit:cover;display:none;
+  border:2px solid rgba(255,255,255,.25);
+  box-shadow:0 18px 35px rgba(0,0,0,.45);
+}
+.cssDog{display:block}
+.dog-body{position:absolute;left:18px;top:42px;width:82px;height:52px;background:#8b5a32;border-radius:38px 38px 26px 26px}
+.dog-head{position:absolute;left:43px;top:13px;width:58px;height:56px;background:#9a693d;border-radius:48%}
+.ear{position:absolute;top:18px;width:22px;height:44px;background:#613b21;border-radius:60%}
+.ear.left{left:34px;transform:rotate(20deg)} .ear.right{left:88px;transform:rotate(-22deg)}
+.eye{position:absolute;top:34px;width:7px;height:7px;background:#101010;border-radius:50%}
+.eye.left{left:60px}.eye.right{left:82px}
+.snout{position:absolute;left:63px;top:42px;width:26px;height:19px;background:#d6aa78;border-radius:50%}
+.nose{position:absolute;left:72px;top:44px;width:9px;height:7px;background:#111;border-radius:50%}
+.mouth{position:absolute;left:73px;top:53px;width:10px;height:6px;border-bottom:2px solid #111;border-radius:0 0 12px 12px}
+.leg{position:absolute;top:82px;width:12px;height:31px;background:#6e4528;border-radius:8px}
+.leg.a{left:30px}.leg.b{left:55px}.leg.c{left:78px}.leg.d{left:95px}
+.tail{position:absolute;left:5px;top:48px;width:43px;height:15px;border-radius:20px;border-top:11px solid #7d4d2a;transform:rotate(-25deg);transform-origin:right center;animation:wag .75s infinite ease-in-out}
+@keyframes wag{50%{transform:rotate(18deg)}}
+.iconFear{
+  display:grid;place-items:center;font-size:82px;border-radius:28px;
+  background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.16);
+  backdrop-filter:blur(2px);
+}
+.darkFear{background:radial-gradient(circle,rgba(0,0,0,.12),rgba(0,0,0,.78));border-radius:999px}
+.heightFear{
+  width:240px;height:155px;border-radius:18px;
+  background:linear-gradient(#5d9cff,#d8ecff 48%,#202631 49%,#111722);
+  border:2px solid rgba(255,255,255,.3);
+}
+.heightFear:after{
+  content:"";position:absolute;left:18px;right:18px;bottom:35px;height:18px;
+  background:repeating-linear-gradient(90deg,#b9c4d6 0 16px,#333 16px 24px);
+}
+.socialFear{
+  width:220px;height:150px;border-radius:24px;background:rgba(255,255,255,.11);
+  border:1px solid rgba(255,255,255,.18);display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:18px;
+}
+.person{border-radius:50%;background:#dfe8ff;position:relative}
+.person:after{content:"";position:absolute;left:10%;right:10%;height:36%;bottom:-20%;background:#dfe8ff;border-radius:18px 18px 0 0}
+.planeFear{font-size:96px;animation:planeTilt 2s infinite ease-in-out}
+@keyframes planeTilt{50%{transform:rotate(7deg)}}
+.pulse{animation:pulse 1.8s infinite ease-in-out}
+@keyframes pulse{50%{opacity:.72;filter:drop-shadow(0 24px 28px rgba(0,0,0,.8))}}
+.topbar{
+  position:absolute;top:env(safe-area-inset-top);left:0;right:0;padding:10px;display:flex;gap:8px;align-items:center;z-index:5
+}
+.chip{
+  background:var(--panel);border:1px solid rgba(255,255,255,.11);border-radius:16px;
+  padding:8px 10px;backdrop-filter:blur(8px);font-weight:800;font-size:13px
+}
+.chip span{color:var(--accent)}
+#panic{margin-left:auto;background:var(--bad);color:white;border:0;border-radius:16px;padding:10px 13px;font-weight:950}
+.panel{
+  position:absolute;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));z-index:6;
+  background:var(--panel);border:1px solid rgba(255,255,255,.12);border-radius:22px;padding:12px;
+  backdrop-filter:blur(12px);box-shadow:0 14px 45px rgba(0,0,0,.38)
+}
+.title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.title h1{font-size:18px;line-height:1.05;margin:0}
+.title small{color:var(--muted);font-weight:800}
+select{
+  width:100%;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.1);
+  color:white;border-radius:15px;padding:10px;font-weight:900;margin:0 0 8px
+}
+select option{color:#111}
+.mission{color:#e9eefb;font-size:14px;line-height:1.28;min-height:38px;margin-bottom:9px}
+.bar{height:12px;border-radius:999px;overflow:hidden;background:rgba(255,255,255,.12);margin:7px 0 11px}
+#progress{width:0%;height:100%;background:linear-gradient(90deg,var(--accent),var(--good));border-radius:inherit;transition:width .25s linear}
+.grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+button{
+  border:0;border-radius:16px;padding:12px 10px;font-weight:950;color:#07101e;background:#eef3ff;min-height:46px;font-size:14px
+}
+button:active{transform:translateY(1px) scale(.99)}
+.primary{background:var(--good)} .secondary{background:#dce7ff} .warn{background:var(--warn)}
+.dark{background:rgba(255,255,255,.12);color:var(--text);border:1px solid rgba(255,255,255,.12)}
+#breath{
+  position:absolute;left:50%;top:45%;width:92px;height:92px;transform:translate(-50%,-50%) scale(.7);
+  border-radius:50%;border:3px solid rgba(255,255,255,.8);background:rgba(122,167,255,.12);display:none;
+  place-items:center;color:white;font-weight:950;text-shadow:0 2px 6px rgba(0,0,0,.7);z-index:4;animation:breathe 6s infinite ease-in-out
+}
+@keyframes breathe{0%,100%{transform:translate(-50%,-50%) scale(.72)}50%{transform:translate(-50%,-50%) scale(1.18)}}
+.screen{
+  position:absolute;inset:0;z-index:10;display:grid;place-items:center;padding:18px;background:linear-gradient(160deg,#09111f,#07090f)
+}
+.card{
+  width:min(560px,100%);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.13);
+  border-radius:26px;padding:18px;box-shadow:0 18px 50px rgba(0,0,0,.35)
+}
+.card h2{margin:0 0 8px;font-size:26px}.card p,.card li{color:#d8e0f5;line-height:1.4}.wide{width:100%;margin-top:10px}.hidden{display:none!important}
+@media (min-width:740px){.panel{left:50%;right:auto;transform:translateX(-50%);width:660px}.fearObj{width:150px;height:150px}#realDog{width:180px;height:240px}}
 </style>
 </head>
 <body>
 <div id="app">
-  <div id="fallback">
-    <div>
-      <b>Camera view</b>
-      <p id="fallbackText">Tap Start Camera. Allow camera permission when your browser asks.</p>
-    </div>
-  </div>
-
+  <div id="fallback"><div><b>Camera view</b><p id="fallbackText">Tap Start Camera and allow permission.</p></div></div>
   <video id="cam" playsinline autoplay muted></video>
   <div id="cameraHelp"></div>
 
-  <div id="dogLayer">
-    <div id="dog">
-      <div class="tail"></div>
-      <div class="dog-body"></div>
-      <div class="ear left"></div><div class="ear right"></div>
-      <div class="dog-head"></div>
-      <div class="eye left"></div><div class="eye right"></div>
-      <div class="snout"></div><div class="nose"></div><div class="mouth"></div>
-      <div class="leg a"></div><div class="leg b"></div><div class="leg c"></div><div class="leg d"></div>
+  <div id="fearLayer">
+    <div id="fearObj" class="fearObj cssDog">
+      <div class="tail"></div><div class="dog-body"></div><div class="ear left"></div><div class="ear right"></div>
+      <div class="dog-head"></div><div class="eye left"></div><div class="eye right"></div><div class="snout"></div>
+      <div class="nose"></div><div class="mouth"></div><div class="leg a"></div><div class="leg b"></div><div class="leg c"></div><div class="leg d"></div>
     </div>
+    <img id="realDog" class="fearObj" alt="Real dog" src="https://commons.wikimedia.org/wiki/Special:FilePath/Golden-retriever-dog-1362597631o6g.jpg">
   </div>
 
   <div id="breath">Breathe</div>
 
   <div class="topbar">
+    <div class="chip">Fear <span id="fearText">Dogs</span></div>
     <div class="chip">Level <span id="levelText">1</span>/10</div>
     <div class="chip">XP <span id="xpText">0</span></div>
-    <div class="chip">Calm <span id="calmText">0</span>s</div>
     <button id="panic">STOP</button>
   </div>
 
   <div class="panel">
     <div class="title">
       <div>
-        <h1>Dog Courage AR</h1>
-        <small id="phaseText">Start easy. Build up slowly.</small>
+        <h1>Face Your Fear AR</h1>
+        <small id="phaseText">Start easy. Build slowly.</small>
       </div>
       <button id="soundBtn" class="dark">Sound Off</button>
     </div>
+    <select id="fearSelect">
+      <option value="dogs">Dogs</option>
+      <option value="spiders">Spiders</option>
+      <option value="snakes">Snakes</option>
+      <option value="darkness">Darkness</option>
+      <option value="heights">Heights</option>
+      <option value="flying">Flying</option>
+      <option value="social">Social Anxiety</option>
+    </select>
     <div id="mission" class="mission"></div>
     <div class="bar"><div id="progress"></div></div>
     <div class="grid">
@@ -279,12 +187,11 @@
   <div id="intro" class="screen">
     <div class="card">
       <h2>Face Your Fear AR</h2>
-      <p>This starts with dogs. It opens your camera and adds a dog into your real room.</p>
+      <p>Use your camera. Pick a fear. The object moves in your room and gets harder by level.</p>
       <ul>
-        <li>Tap the green button and allow camera access.</li>
-        <li>Use Chrome, Edge, or Samsung Internet.</li>
-        <li>If Android opens it as a local file, camera may be blocked.</li>
-        <li>You can stop instantly.</li>
+        <li>Dogs start with a soft version, then a real photo.</li>
+        <li>Spiders, snakes, darkness, heights, flying, and social fear are included.</li>
+        <li>Stop any time.</li>
       </ul>
       <button id="allowBtn" class="primary wide">Start Camera</button>
       <button id="noCamBtn" class="dark wide">Play Without Camera</button>
@@ -293,221 +200,203 @@
 </div>
 
 <script>
-const levels = [
-  {name:"Friendly far dog", time:8, scale:.45, x:50, y:60, cls:"", mission:"Look at the small friendly dog for 8 seconds. Keep your breathing slow."},
-  {name:"Dog closer", time:10, scale:.65, x:52, y:58, cls:"", mission:"The dog is closer. Stay calm for 10 seconds."},
-  {name:"Moving dog", time:12, scale:.75, x:42, y:57, cls:"closeDog", mission:"The dog moves a little. Watch it without tapping stop."},
-  {name:"Realistic dog", time:14, scale:.85, x:55, y:56, cls:"realistic", mission:"The dog now looks more real. Keep your eyes on it for 14 seconds."},
-  {name:"Dog sound", time:15, scale:.9, x:50, y:56, cls:"realistic closeDog", mission:"Sound level. Turn sound on if you want. Stay calm for 15 seconds."},
-  {name:"Bigger dog", time:17, scale:1.1, x:48, y:55, cls:"realistic closeDog", mission:"The dog is bigger and nearer. Use breathing if needed."},
-  {name:"Shadow dog", time:18, scale:1.15, x:52, y:54, cls:"realistic shadowDog closeDog", mission:"The dog has a stronger shadow. Stay with the feeling for 18 seconds."},
-  {name:"Alert dog", time:20, scale:1.25, x:50, y:53, cls:"realistic growlDog closeDog", mission:"The dog looks alert. Notice it, breathe, and do not rush."},
-  {name:"Very close dog", time:22, scale:1.5, x:50, y:52, cls:"realistic growlDog closeDog", mission:"Very close level. Calm time target is 22 seconds."},
-  {name:"Real life step", time:25, scale:1.3, x:50, y:55, cls:"realistic closeDog", mission:"Final step. Stay calm, then try a safe real-life dog step later with an adult or trainer."}
-];
+const fearPacks = {
+  dogs: {
+    label:"Dogs", sound:"bark", realAt:5,
+    levels:["Friendly far dog","Dog closer","Moving dog","Realistic dog","Real dog photo","Dog sound","Bigger dog","Alert dog","Very close dog","Real-life step"],
+    mission:[
+      "Look at the small dog for 8 seconds.",
+      "The dog is closer. Stay calm for 10 seconds.",
+      "The dog moves around your room. Watch it for 12 seconds.",
+      "The dog looks more realistic. Stay calm for 14 seconds.",
+      "Real dog photo level. Look for 15 seconds.",
+      "Sound level. Turn sound on only if ready.",
+      "Bigger dog. Use breathing if needed.",
+      "Alert dog. Notice the fear and stay.",
+      "Very close dog. Complete 22 seconds.",
+      "Final step. Try a safe real-life dog step later with an adult or trainer."
+    ]
+  },
+  spiders: {label:"Spiders", icon:"🕷️", sound:"tap", levels:["Tiny spider","Still spider","Moving spider","Closer spider","Bigger spider","Fast spider","Wall spider","Near hand","Very close spider","Real-life step"]},
+  snakes: {label:"Snakes", icon:"🐍", sound:"hiss", levels:["Tiny snake","Still snake","Slow snake","Closer snake","Bigger snake","Curled snake","Moving snake","Near floor","Very close snake","Real-life step"]},
+  darkness: {label:"Darkness", icon:"", sound:"wind", levels:["Dim room","Darker room","One shadow","Moving shadow","Low light","Noisy dark","Near shadow","Blackout pulse","Very dark","Real-life step"]},
+  heights: {label:"Heights", custom:"height", sound:"wind", levels:["Low step","Small balcony","Bridge view","Higher bridge","Rooftop edge","Glass floor","Wind sound","Narrow path","Very high edge","Real-life step"]},
+  flying: {label:"Flying", icon:"✈️", sound:"plane", levels:["Plane photo","Cabin sound","Takeoff sound","Window view","Small turbulence","Longer turbulence","Seatbelt sign","Engine noise","Landing shake","Real-life step"]},
+  social: {label:"Social Anxiety", custom:"social", sound:"crowd", levels:["One person","Two people","Small group","Say hello","Answer question","Mini interview","Classroom","Audience","Big audience","Real-life step"]}
+};
 
-let level = Number(localStorage.getItem("dogFearLevel") || 1);
-let xp = Number(localStorage.getItem("dogFearXP") || 0);
-let running = false;
-let calm = 0;
-let timer = null;
-let soundOn = false;
-let audioCtx = null;
-let currentFacing = "environment";
-let stream = null;
-let cameraReady = false;
+let fear = localStorage.getItem("fearType") || "dogs";
+let level = Number(localStorage.getItem("level_"+fear) || 1);
+let xp = Number(localStorage.getItem("fearXP") || 0);
+let running=false, calm=0, timer=null, moveTimer=null, soundOn=false, audioCtx=null, stream=null, cameraReady=false, currentFacing="environment";
 
-const dog = document.getElementById("dog");
-const mission = document.getElementById("mission");
-const levelText = document.getElementById("levelText");
-const xpText = document.getElementById("xpText");
-const calmText = document.getElementById("calmText");
-const phaseText = document.getElementById("phaseText");
-const progress = document.getElementById("progress");
-const cam = document.getElementById("cam");
-const fallback = document.getElementById("fallback");
-const fallbackText = document.getElementById("fallbackText");
-const intro = document.getElementById("intro");
-const breath = document.getElementById("breath");
-const cameraHelp = document.getElementById("cameraHelp");
-const startBtn = document.getElementById("startBtn");
+const el=id=>document.getElementById(id);
+const fearObj=el("fearObj"), realDog=el("realDog"), mission=el("mission"), levelText=el("levelText"), xpText=el("xpText"), fearText=el("fearText"), phaseText=el("phaseText"), progress=el("progress"), cam=el("cam"), fallback=el("fallback"), cameraHelp=el("cameraHelp"), startBtn=el("startBtn"), breath=el("breath"), intro=el("intro"), fearSelect=el("fearSelect");
+fearSelect.value=fear;
 
-function isSecureEnough(){
-  return location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1";
+function isSecureEnough(){return location.protocol==="https:" || location.hostname==="localhost" || location.hostname==="127.0.0.1"}
+function showHelp(msg){cameraHelp.textContent=msg;cameraHelp.style.display="block"}
+function hideHelp(){cameraHelp.style.display="none"}
+
+function targetTime(){return 7 + level*2}
+function applyFearVisual(){
+  const pack=fearPacks[fear];
+  fearText.textContent=pack.label;
+  levelText.textContent=level;
+  xpText.textContent=xp;
+  phaseText.textContent=pack.levels[level-1];
+  const m = pack.mission ? pack.mission[level-1] : `${pack.levels[level-1]}. Stay calm for ${targetTime()} seconds.`;
+  mission.textContent=m;
+
+  realDog.style.display="none";
+  fearObj.style.display="block";
+  fearObj.innerHTML="";
+
+  if(fear==="dogs"){
+    if(level >= pack.realAt){
+      fearObj.style.display="none";
+      realDog.style.display="block";
+      realDog.className="fearObj pulse";
+    }else{
+      fearObj.className="fearObj cssDog pulse";
+      fearObj.innerHTML = `<div class="tail"></div><div class="dog-body"></div><div class="ear left"></div><div class="ear right"></div><div class="dog-head"></div><div class="eye left"></div><div class="eye right"></div><div class="snout"></div><div class="nose"></div><div class="mouth"></div><div class="leg a"></div><div class="leg b"></div><div class="leg c"></div><div class="leg d"></div>`;
+    }
+  } else if(pack.custom==="height"){
+    fearObj.className="fearObj heightFear pulse";
+  } else if(pack.custom==="social"){
+    fearObj.className="fearObj socialFear pulse";
+    fearObj.innerHTML=`<div class="person"></div><div class="person"></div><div class="person"></div>`;
+  } else if(fear==="darkness"){
+    fearObj.className="fearObj darkFear pulse";
+  } else if(fear==="flying"){
+    fearObj.className="fearObj iconFear planeFear pulse";
+    fearObj.textContent=pack.icon;
+  } else {
+    fearObj.className="fearObj iconFear pulse";
+    fearObj.textContent=pack.icon;
+  }
+
+  const scale = 0.45 + level * 0.12;
+  const target = fear==="dogs" && level>=5 ? realDog : fearObj;
+  target.style.transform=`translate(-50%,-50%) scale(${scale})`;
+  target.style.left="50%"; target.style.top="54%";
+  progress.style.width=Math.min(100, calm/targetTime()*100)+"%";
 }
-
-function showHelp(msg){
-  cameraHelp.textContent = msg;
-  cameraHelp.style.display = "block";
-}
-
-function hideHelp(){
-  cameraHelp.style.display = "none";
-}
-
-function applyLevel(){
-  const l = levels[level-1];
-  dog.className = l.cls;
-  dog.style.left = l.x + "%";
-  dog.style.top = l.y + "%";
-  dog.style.transform = `translate(-50%,-50%) scale(${l.scale})`;
-  mission.textContent = l.mission;
-  phaseText.textContent = l.name;
-  levelText.textContent = level;
-  xpText.textContent = xp;
-  calmText.textContent = calm;
-  progress.style.width = Math.min(100, calm / l.time * 100) + "%";
-}
-applyLevel();
+applyFearVisual();
 
 async function startCamera(){
   hideHelp();
-
   if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
     showHelp("This browser cannot open the camera. Use Chrome, Edge, or Samsung Internet.");
-    fallbackText.textContent = "Camera API is not supported in this browser.";
     return false;
   }
-
   if(!isSecureEnough()){
-    showHelp("Camera is blocked because this file is not on HTTPS or localhost. Upload it to Netlify or GitHub Pages, or run it from a local web server.");
+    showHelp("Camera needs HTTPS or localhost. GitHub Pages is OK. Local files are blocked.");
   }
-
-  if(stream){
-    stream.getTracks().forEach(t => t.stop());
-    stream = null;
-  }
-
-  const tries = [
-    {video:{facingMode:{exact:currentFacing}}, audio:false},
-    {video:{facingMode:currentFacing}, audio:false},
-    {video:true, audio:false}
+  if(stream){stream.getTracks().forEach(t=>t.stop()); stream=null}
+  const tries=[
+    {video:{facingMode:{exact:currentFacing}},audio:false},
+    {video:{facingMode:currentFacing},audio:false},
+    {video:true,audio:false}
   ];
-
-  for(const constraints of tries){
+  for(const c of tries){
     try{
-      stream = await navigator.mediaDevices.getUserMedia(constraints);
-      cam.srcObject = stream;
-      cam.muted = true;
-      cam.setAttribute("playsinline", "");
+      stream=await navigator.mediaDevices.getUserMedia(c);
+      cam.srcObject=stream; cam.muted=true; cam.setAttribute("playsinline","");
       await cam.play();
-
-      cameraReady = true;
-      fallback.style.display = "none";
-      cam.classList.toggle("selfie", currentFacing === "user");
-      startBtn.textContent = "Start";
-      hideHelp();
-      return true;
-    }catch(e){
-      console.log("Camera attempt failed", e.name, e.message);
-    }
+      cameraReady=true; fallback.style.display="none"; cam.classList.toggle("selfie",currentFacing==="user");
+      startBtn.textContent="Start"; hideHelp(); return true;
+    }catch(e){console.log(e.name,e.message)}
   }
-
-  cameraReady = false;
-  fallback.style.display = "grid";
-  fallbackText.textContent = "Camera did not open. Check permission, browser, and HTTPS.";
-  showHelp("Camera failed. Tap the lock icon in your browser and allow Camera. If this is a downloaded file, use HTTPS or localhost.");
+  showHelp("Camera failed. Tap the browser lock icon and allow Camera.");
   return false;
 }
 
-async function ensureCameraThenStart(){
-  intro.classList.add("hidden");
-  if(!cameraReady){
-    await startCamera();
-  }
-  startRun();
+function moveFear(){
+  const target = fear==="dogs" && level>=5 ? realDog : fearObj;
+  const x = 30 + Math.random()*40;
+  const y = 34 + Math.random()*26;
+  const scale = 0.45 + level * 0.12;
+  target.style.left=x+"%";
+  target.style.top=y+"%";
+  target.style.transform=`translate(-50%,-50%) scale(${scale})`;
 }
 
 function startRun(){
-  running = true;
-  calm = 0;
-  applyLevel();
-  clearInterval(timer);
-  timer = setInterval(()=>{
-    if(!running) return;
+  running=true; calm=0; applyFearVisual();
+  clearInterval(timer); clearInterval(moveTimer);
+  moveFear();
+  moveTimer=setInterval(moveFear, Math.max(900, 2600-level*150));
+  timer=setInterval(()=>{
+    if(!running)return;
     calm++;
-    calmText.textContent = calm;
-    const target = levels[level-1].time;
-    progress.style.width = Math.min(100, calm / target * 100) + "%";
-    if(soundOn && calm % 4 === 0) bark();
-    if(calm >= target){
-      running = false;
-      clearInterval(timer);
-      xp += 10 + level * 3;
-      localStorage.setItem("dogFearXP", xp);
-      mission.textContent = "Level complete. You earned XP. Press Next Level when you feel ready.";
-      xpText.textContent = xp;
+    progress.style.width=Math.min(100, calm/targetTime()*100)+"%";
+    if(soundOn && calm%4===0) playSound();
+    if(calm>=targetTime()){
+      running=false; clearInterval(timer); clearInterval(moveTimer);
+      xp += 10 + level*3;
+      localStorage.setItem("fearXP",xp);
+      xpText.textContent=xp;
+      mission.textContent="Level complete. Press Next Level when ready.";
     }
   },1000);
 }
 
 function stopNow(){
-  running = false;
-  clearInterval(timer);
-  calm = 0;
-  progress.style.width = "0%";
-  calmText.textContent = calm;
-  mission.textContent = "Stopped. Good choice. Press Breathing or Start again when ready.";
+  running=false; clearInterval(timer); clearInterval(moveTimer); calm=0;
+  progress.style.width="0%"; mission.textContent="Stopped. Press Breathing or Start again when ready.";
 }
 
 function nextLevel(){
-  if(level < levels.length){
-    level++;
-    localStorage.setItem("dogFearLevel", level);
-    calm = 0;
-    running = false;
-    clearInterval(timer);
-    applyLevel();
-  }else{
-    mission.textContent = "You completed all dog levels. Next fear packs can be spiders, darkness, heights, flying, or social fear.";
-  }
+  if(level<10){level++; localStorage.setItem("level_"+fear,level); calm=0; stopNow(); applyFearVisual();}
+  else{mission.textContent="Pack complete. Pick another fear from the menu."}
 }
 
-function bark(){
+function setFear(v){
+  stopNow();
+  fear=v; localStorage.setItem("fearType",fear);
+  level=Number(localStorage.getItem("level_"+fear) || 1);
+  applyFearVisual();
+}
+
+function playSound(){
   try{
-    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
-    const o = audioCtx.createOscillator();
-    const g = audioCtx.createGain();
-    o.type = "sawtooth";
-    o.frequency.setValueAtTime(180, audioCtx.currentTime);
-    o.frequency.exponentialRampToValueAtTime(90, audioCtx.currentTime + .12);
-    g.gain.setValueAtTime(.0001, audioCtx.currentTime);
-    g.gain.exponentialRampToValueAtTime(.08, audioCtx.currentTime + .02);
-    g.gain.exponentialRampToValueAtTime(.0001, audioCtx.currentTime + .18);
-    o.connect(g); g.connect(audioCtx.destination);
-    o.start(); o.stop(audioCtx.currentTime + .2);
+    audioCtx=audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+    const type=fearPacks[fear].sound;
+    o.type= type==="hiss" ? "sine" : "sawtooth";
+    let f1=180,f2=90,d=.2;
+    if(type==="hiss"){f1=520;f2=420;d=.35}
+    if(type==="wind"){f1=120;f2=80;d=.55}
+    if(type==="plane"){f1=95;f2=115;d=.45}
+    if(type==="crowd"){f1=240;f2=180;d=.28}
+    if(type==="tap"){f1=650;f2=240;d=.08}
+    o.frequency.setValueAtTime(f1,audioCtx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(f2,audioCtx.currentTime+d);
+    g.gain.setValueAtTime(.0001,audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(.08,audioCtx.currentTime+.02);
+    g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+d);
+    o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+d+.03);
   }catch(e){}
 }
 
-document.getElementById("allowBtn").onclick = ensureCameraThenStart;
-document.getElementById("noCamBtn").onclick = ()=>{
+async function ensureCameraThenStart(){
   intro.classList.add("hidden");
+  if(!cameraReady) await startCamera();
   startRun();
-};
-startBtn.onclick = ensureCameraThenStart;
-document.getElementById("panic").onclick = stopNow;
-document.getElementById("nextBtn").onclick = nextLevel;
-document.getElementById("switchCamBtn").onclick = async ()=>{
-  currentFacing = currentFacing === "environment" ? "user" : "environment";
-  await startCamera();
-};
-document.getElementById("soundBtn").onclick = ()=>{
-  soundOn = !soundOn;
-  document.getElementById("soundBtn").textContent = soundOn ? "Sound On" : "Sound Off";
-  if(soundOn) bark();
-};
-document.getElementById("breathBtn").onclick = ()=>{
-  const on = breath.style.display === "grid";
-  breath.style.display = on ? "none" : "grid";
-};
+}
 
-window.addEventListener("touchmove", e=>e.preventDefault(), {passive:false});
-
-document.addEventListener("visibilitychange", ()=>{
-  if(document.hidden){
-    stopNow();
-  }
-});
+el("allowBtn").onclick=ensureCameraThenStart;
+el("noCamBtn").onclick=()=>{intro.classList.add("hidden");startRun()};
+startBtn.onclick=ensureCameraThenStart;
+el("panic").onclick=stopNow;
+el("nextBtn").onclick=nextLevel;
+el("switchCamBtn").onclick=async()=>{currentFacing=currentFacing==="environment"?"user":"environment";await startCamera()};
+el("soundBtn").onclick=()=>{soundOn=!soundOn;el("soundBtn").textContent=soundOn?"Sound On":"Sound Off"; if(soundOn)playSound()};
+el("breathBtn").onclick=()=>{breath.style.display = breath.style.display==="grid" ? "none" : "grid"};
+fearSelect.onchange=e=>setFear(e.target.value);
+window.addEventListener("touchmove",e=>e.preventDefault(),{passive:false});
+document.addEventListener("visibilitychange",()=>{if(document.hidden)stopNow()});
 </script>
 </body>
 </html>
